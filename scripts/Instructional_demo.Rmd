@@ -1,0 +1,130 @@
+---
+title: "Mission Antarctica"
+author: "Ellen Bledsoe"
+date: "8/17/2021"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+Load the packages we will need:
+```{r}
+library(tidyverse)
+library(forecast)
+library(maps)
+library(patchwork)
+```
+
+## Tucson Airport Temperature Data
+
+* Average monthly temperature (Celsius) data from the Tucson Airport 
+* [Downloaded from NASA](https://data.giss.nasa.gov/cgi-bin/gistemp/stdata_show_v4.cgi?id=USW00023160&dt=1&ds=14) 
+
+```{r}
+tucson <- read_csv("../data/Tucson_Intl_Airport_WS.csv")
+```
+
+Let's take a look at the data.
+```{r}
+glimpse(tucson)
+```
+Note the 999.9s in the data. This is a common way of indicating that there is no data, or NA.
+Let's tell R to convert 999.9 to NAs.
+
+```{r}
+tucson <- read_csv("../data/Tucson_Intl_Airport_WS.csv",
+                   na = "999.9")
+glimpse(tucson)
+```
+That's better!
+
+Now, let's plot the summer data. This is when the temps are hottest. It is also monsoon season, so the humidity is higher. This _could_ lead to "wet-bulb" temperatures of 35 C, which are extremely dangerous to humans.
+```{r}
+ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+  geom_point() 
+```
+
+It's a good start, but let's make it better.
+```{r}
+ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+  geom_point() +
+  geom_line() +
+  stat_smooth() +
+  labs(
+    title = "Mean Summer Temperature at Tucson Intl. Airport (1949-2021)",
+    subtitle = "June, July, August",
+    x = "Year",
+    y = expression("Mean Summer Temp ("*degree*"C)")
+  ) +
+  theme_bw()
+```
+
+There's a clear upward trend in temperatures, which makes sense.
+
+Now let's extrapolate. When does the average summer temperature become 35 C?
+
+* NOTE: I'm not suggesting that this is the best method for prediction! This is simply an example of something you _can_ do.
+
+```{r}
+temp <- ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 35) + # 35 wet-bulb is too much
+  xlim(1945, 2200) +
+  stat_smooth(method = 'lm', fullrange = TRUE) +
+  labs(
+    title = "Mean Summer Temperature at Tucson Intl. Airport (1949-2021)",
+    subtitle = "June, July, August",
+    x = "Year",
+    y = expression("Mean Summer Temp ("*degree*"C)")
+  ) +
+  theme_bw()
+```
+
+Let's make a map with Tucson highlighted so people know what location we are talking about.
+```{r}
+# map
+us_states <- map_data("state") %>% 
+  rename(Latitude = lat, Longitude = long)
+tucson_airport <- data.frame(
+  Latitude = c(32.1314),
+  Longitude = c(-110.9553)
+)
+
+map <- ggplot(us_states) +
+  geom_polygon(aes(x = Longitude, y = Latitude, group = group), 
+               fill = "white", color = "black") +
+  coord_quickmap() + 
+  geom_point(tucson_airport, mapping = aes(x = Longitude, y = Latitude), 
+             color = "red", size = 8, shape = 18) +
+  theme_bw()
+```
+
+We can plot these next to each other
+```{r}
+final_plot <- map + temp
+final_plot
+```
+
+Maybe better way to incorporate the map is as an insert?
+```{r}
+#code for insert?
+```
+
+Other extrapolation analysis options: ARIMA
+```{r}
+# time-series analysis
+summer_ts <- ts(tucson$`J-J-A`)
+model <- auto.arima(summer_ts)
+plot(forecast(model, h = 20))
+plot(forecast(model, h = 200))
+abline(h = 35)
+```
+
+
+
+
+
+
