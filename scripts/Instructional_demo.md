@@ -7,9 +7,9 @@ Load the packages we will need:
 
 ``` r
 library(tidyverse)
-library(forecast)
 library(maps)
 library(patchwork)
+library(cowplot)
 ```
 
 ## Tucson Airport Temperature Data
@@ -133,20 +133,27 @@ temp <- ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
     y = expression("Mean Summer Temp ("*degree*"C)")
   ) +
   theme_bw()
+temp
 ```
+
+![](Instructional_demo_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+Looks to be around the year 2180.
 
 Let’s make a map with Tucson highlighted so people know what location we
 are talking about.
 
 ``` r
-# map
+# get data for map of US
 us_states <- map_data("state") %>% 
   rename(Latitude = lat, Longitude = long)
+
+# make a dataframe that has TUS location
 tucson_airport <- data.frame(
   Latitude = c(32.1314),
   Longitude = c(-110.9553)
 )
 
+# plot map with TUS
 map <- ggplot(us_states) +
   geom_polygon(aes(x = Longitude, y = Latitude, group = group), 
                fill = "white", color = "black") +
@@ -154,26 +161,31 @@ map <- ggplot(us_states) +
   geom_point(tucson_airport, mapping = aes(x = Longitude, y = Latitude), 
              color = "red", size = 8, shape = 18) +
   theme_bw()
+map
 ```
+
+![](Instructional_demo_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 We can plot these next to each other
 
 ``` r
-final_plot <- map + temp
-final_plot
+plot <- map + temp
 ```
-
-![](Instructional_demo_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 Maybe better way to incorporate the map is as an insert?
 
 ``` r
-#code for insert?
+ggdraw() +
+  draw_plot(temp) +
+  draw_plot(map, height = 0.3, width = 0.3, x = .68, y = 0.125)
 ```
+
+![](Instructional_demo_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 Other extrapolation analysis options: ARIMA
 
 ``` r
+library(forecast)
 # time-series analysis
 summer_ts <- ts(tucson$`J-J-A`)
 model <- auto.arima(summer_ts)
