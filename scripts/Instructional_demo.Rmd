@@ -17,11 +17,12 @@ library(patchwork)
 library(cowplot)
 ```
 
-## Tucson Airport Temperature Data
+# Tucson Airport Temperature Data
 
 * Average monthly temperature (Celsius) data from the Tucson Airport 
 * [Downloaded from NASA](https://data.giss.nasa.gov/cgi-bin/gistemp/stdata_show_v4.cgi?id=USW00023160&dt=1&ds=14) 
 
+## Data
 ```{r}
 tucson <- read_csv("../data/Tucson_Intl_Airport_WS.csv")
 ```
@@ -41,7 +42,9 @@ glimpse(tucson)
 ```
 That's better!
 
-Now, let's plot the summer data. This is when the temps are hottest. It is also monsoon season, so the humidity is higher. This _could_ lead to "wet-bulb" temperatures of 35 C, which are extremely dangerous to humans.
+## Plotting 
+
+Now, let's plot the summer data (June, July, August). This is when the temps are hottest. It is also monsoon season, so the humidity is higher. This _could_ lead to "wet-bulb" temperatures of 35 C, which are extremely dangerous to humans.
 ```{r}
 ggplot(data = tucson, aes(x = Year, y = Summer)) +
   geom_point() 
@@ -65,6 +68,8 @@ ggplot(data = tucson, aes(x = Year, y = Summer)) +
 
 There's a clear upward trend in temperatures, which makes sense.
 
+## Extrapolation
+
 Now let's extrapolate. When does the average summer temperature become 35 C?
 
 * NOTE: I'm not suggesting that this is the best method for prediction! This is simply an example of something you _can_ do.
@@ -87,6 +92,8 @@ temp
 ```
 
 Looks to be around the year 2180.
+
+## Mapping
 
 Let's make a map with Tucson highlighted so people know what location we are talking about.
 ```{r}
@@ -112,6 +119,8 @@ map <- ggplot(us_states) +
 map
 ```
 
+## Combine them!
+
 We can plot these next to each other
 ```{r}
 plot <- map + temp
@@ -120,14 +129,17 @@ plot
 
 Maybe better way to incorporate the map is as an insert?
 ```{r}
+map <- map +
+  theme(plot.background = element_rect(color = "black", fill = "white"))
+
 # the ggdraw() and draw_plot() functions are from the `cowplot` package
 ggdraw() +
   draw_plot(temp) +
-  draw_plot(map, height = 0.3, width = 0.3, x = 0.68, y = 0.125)
+  draw_plot(map, height = 0.3, width = 0.3, x = 0.69, y = 0.125)
   
 ```
 
-Other extrapolation analysis options: ARIMA
+## Other Extrapolation Option: ARIMA
 ```{r}
 library(forecast)
 
