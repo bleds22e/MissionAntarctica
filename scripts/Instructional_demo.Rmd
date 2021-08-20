@@ -54,8 +54,8 @@ ggplot(data = tucson, aes(x = Year, y = Summer)) +
   geom_line() +
   stat_smooth(method = 'lm') +
   labs(
-    title = "Mean Summer Temperature at Tucson Intl. Airport (1949-2021)",
-    subtitle = "June, July, August",
+    title = "Mean Summer Temp. at TUS",
+    subtitle = "1949-2021",
     x = "Year",
     y = expression("Mean Summer Temp ("*degree*"C)")
   ) +
@@ -85,6 +85,7 @@ temp <- ggplot(data = tucson, aes(x = Year, y = Summer)) +
   theme_bw()
 temp
 ```
+
 Looks to be around the year 2180.
 
 Let's make a map with Tucson highlighted so people know what location we are talking about.
@@ -106,7 +107,8 @@ map <- ggplot(us_states) +
   coord_quickmap() + 
   geom_point(tucson_airport, mapping = aes(x = Longitude, y = Latitude), 
              color = "red", size = 5, shape = 18) +
-  theme_bw()
+  theme_classic() +
+  theme(panel.border = element_rect(color = "black", fill = NA))
 map
 ```
 
@@ -118,21 +120,23 @@ plot
 
 Maybe better way to incorporate the map is as an insert?
 ```{r}
+# the ggdraw() and draw_plot() functions are from the `cowplot` package
 ggdraw() +
   draw_plot(temp) +
-  draw_plot(map, height = 0.3, width = 0.3, x = .68, y = 0.125)
+  draw_plot(map, height = 0.3, width = 0.3, x = 0.68, y = 0.125)
   
 ```
 
 Other extrapolation analysis options: ARIMA
 ```{r}
 library(forecast)
+
 # time-series analysis
-summer_ts <- ts(tucson$Summer)
-model <- auto.arima(summer_ts)
-plot(forecast(model, h = 20))
-plot(forecast(model, h = 200))
-abline(h = 35)
+summer_ts <- ts(tucson$Summer)  # make temp data into a time series
+model <- auto.arima(summer_ts)  # find the best ARIMA for the data
+plot(forecast(model, h = 20))   # we can use the ARIMA to forecast 20 years out
+plot(forecast(model, h = 200))  # also 200 years out
+abline(h = 35)                  # add a line that indicates our cut-off
 ```
 
 

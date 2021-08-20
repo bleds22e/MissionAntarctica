@@ -54,13 +54,14 @@ there is no data, or NA. Let’s tell R to convert 999.9 to NAs.
 
 ``` r
 tucson <- read_csv("../data/Tucson_Intl_Airport_WS.csv",
-                   na = "999.9")
+                   na = "999.9") %>% 
+  rename(Summer = `J-J-A`, Year = YEAR)
 glimpse(tucson)
 ```
 
     ## Rows: 74
     ## Columns: 18
-    ## $ YEAR    <dbl> 1948, 1949, 1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 19…
+    ## $ Year    <dbl> 1948, 1949, 1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 19…
     ## $ JAN     <dbl> NA, 6.70, 10.84, 10.78, 11.56, 12.77, 12.55, 8.80, 14.03, 12.7…
     ## $ FEB     <dbl> NA, 10.75, 14.57, 12.64, 11.47, 11.80, 16.34, 9.95, 9.87, 16.8…
     ## $ MAR     <dbl> NA, 14.85, 16.54, 14.71, 12.07, 16.49, 15.75, 15.94, 16.26, 15…
@@ -75,7 +76,7 @@ glimpse(tucson)
     ## $ DEC     <dbl> 11.27, 11.21, 14.47, 11.43, 10.65, 9.83, 12.46, 13.67, 12.01, …
     ## $ `D-J-F` <dbl> NA, 9.57, 12.21, 12.63, 11.49, 11.74, 12.91, 10.40, 12.52, 13.…
     ## $ `M-A-M` <dbl> NA, 19.58, 20.13, 19.08, 18.84, 18.87, 21.10, 19.10, 19.89, 19…
-    ## $ `J-J-A` <dbl> NA, 29.54, 28.97, 29.90, 29.99, 30.49, 29.73, 28.90, 30.17, 30…
+    ## $ Summer  <dbl> NA, 29.54, 28.97, 29.90, 29.99, 30.49, 29.73, 28.90, 30.17, 30…
     ## $ `S-O-N` <dbl> NA, 22.27, 23.22, 22.50, 22.83, 22.74, 23.54, 22.45, 22.15, 20…
     ## $ metANN  <dbl> NA, 20.24, 21.13, 21.03, 20.79, 20.96, 21.82, 20.21, 21.18, 21…
 
@@ -87,7 +88,7 @@ is also monsoon season, so the humidity is higher. This *could* lead to
 humans.
 
 ``` r
-ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+ggplot(data = tucson, aes(x = Year, y = Summer)) +
   geom_point() 
 ```
 
@@ -96,13 +97,13 @@ ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
 It’s a good start, but let’s make it better.
 
 ``` r
-ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+ggplot(data = tucson, aes(x = Year, y = Summer)) +
   geom_point() +
   geom_line() +
-  stat_smooth() +
+  stat_smooth(method = 'lm') +
   labs(
-    title = "Mean Summer Temperature at Tucson Intl. Airport (1949-2021)",
-    subtitle = "June, July, August",
+    title = "Mean Summer Temp. at TUS",
+    subtitle = "1949-2021",
     x = "Year",
     y = expression("Mean Summer Temp ("*degree*"C)")
   ) +
@@ -120,15 +121,15 @@ Now let’s extrapolate. When does the average summer temperature become
     prediction! This is simply an example of something you *can* do.
 
 ``` r
-temp <- ggplot(data = tucson, aes(x = YEAR, y = `J-J-A`)) +
+temp <- ggplot(data = tucson, aes(x = Year, y = Summer)) +
   geom_point() +
   geom_line() +
   geom_hline(yintercept = 35) + # 35 wet-bulb is too much
   xlim(1945, 2200) +
   stat_smooth(method = 'lm', fullrange = TRUE) +
   labs(
-    title = "Mean Summer Temperature at Tucson Intl. Airport (1949-2021)",
-    subtitle = "June, July, August",
+    title = "Mean Summer Temp. at TUS",
+    subtitle = "1949-2021",
     x = "Year",
     y = expression("Mean Summer Temp ("*degree*"C)")
   ) +
@@ -137,6 +138,7 @@ temp
 ```
 
 ![](Instructional_demo_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
 Looks to be around the year 2180.
 
 Let’s make a map with Tucson highlighted so people know what location we
@@ -159,8 +161,9 @@ map <- ggplot(us_states) +
                fill = "white", color = "black") +
   coord_quickmap() + 
   geom_point(tucson_airport, mapping = aes(x = Longitude, y = Latitude), 
-             color = "red", size = 8, shape = 18) +
-  theme_bw()
+             color = "red", size = 5, shape = 18) +
+  theme_classic() +
+  theme(panel.border = element_rect(color = "black", fill = NA))
 map
 ```
 
@@ -170,14 +173,18 @@ We can plot these next to each other
 
 ``` r
 plot <- map + temp
+plot
 ```
+
+![](Instructional_demo_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 Maybe better way to incorporate the map is as an insert?
 
 ``` r
+# the ggdraw() and draw_plot() functions are from the `cowplot` package
 ggdraw() +
   draw_plot(temp) +
-  draw_plot(map, height = 0.3, width = 0.3, x = .68, y = 0.125)
+  draw_plot(map, height = 0.3, width = 0.3, x = 0.68, y = 0.125)
 ```
 
 ![](Instructional_demo_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
@@ -186,17 +193,18 @@ Other extrapolation analysis options: ARIMA
 
 ``` r
 library(forecast)
+
 # time-series analysis
-summer_ts <- ts(tucson$`J-J-A`)
-model <- auto.arima(summer_ts)
-plot(forecast(model, h = 20))
+summer_ts <- ts(tucson$Summer)  # make temp data into a time series
+model <- auto.arima(summer_ts)  # find the best ARIMA for the data
+plot(forecast(model, h = 20))   # we can use the ARIMA to forecast 20 years out
 ```
 
 ![](Instructional_demo_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
-plot(forecast(model, h = 200))
-abline(h = 35)
+plot(forecast(model, h = 200))  # also 200 years out
+abline(h = 35)                  # add a line that indicates our cut-off
 ```
 
 ![](Instructional_demo_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
